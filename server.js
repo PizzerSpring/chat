@@ -17,12 +17,15 @@ const io = new Server(server, {
 io.on('connection', (socket) => {
     console.log(`Пользователь подключился. ID: ${socket.id}`);
 
-    // Слушаем кастомное событие 'chat message' от этого клиента
+    // Слушаем кастомное событие 'hello_from_client' от этого клиента
     socket.on('hello_from_client', (data) => {
         console.log(`Получено сообщение: ${data.text}`);
 
         // Переотправляем сообщение всем подключенным клиентам (включая отправителя)
-        io.emit('hello_from_server', `Эхо от сервера: ${data}`);
+        io.emit('hello_from_server', {
+            id: Date.now(),
+            text: data.text
+        });
     });
 
     // Событие: отключение клиента

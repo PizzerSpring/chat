@@ -5,7 +5,8 @@ import './App.css'
 const socket = io('http://localhost:3001');
 
 function App() {
-    const [serverMessage, setServerMessage] = useState('Ожидание сообщений...');
+    const [messages, setMessages] = useState([]);
+    const [inputValue, setInputValue] = useState('');
     const [isConnected, setIsConnected] = useState(false);
 
     useEffect(() => {
@@ -25,7 +26,8 @@ function App() {
         // Слушаем специальное сообщение 'hello_from_server', которое пришлет нам сервер
         socket.on('hello_from_server', (data) => {
             // Сохраняем текст из сообщения в состояние, чтобы React обновил экран
-            setServerMessage(data.text);
+            console.log("!!! МЫ ПОЙМАЛИ ОТВЕТ ОТ СЕРВЕРА В БРАУЗЕРЕ:", data.text);
+            setMessages((prevMessages) => [...prevMessages, data]);
         });
 
         // Важно: эта функция сработает, когда компонент "умрет" (размонтируется).
@@ -38,9 +40,14 @@ function App() {
         };
     }, [])
 
-    const sendMessageToServer = () => {
+    const sendMessageToServer = (e) => {
+        e.preventDefault();
         // .emit отправляет событие на сервер. Первым параметром пишем название, вторым — любые данные (объект)
-        socket.emit('hello_from_client', { text: 'Привет, сервер! Как дела?' });
+        if (inputValue.trim()) {
+            // Отправляем текущий текст из инпута
+            socket.emit('hello_from_client', { text: inputValue });
+            setInputValue(''); // Очищаем поле ввода
+        }
     };
 
   return (
@@ -54,14 +61,34 @@ function App() {
           </p>
 
           {/* Кнопка для отправки сигнала на сервер */}
-          <button onClick={sendMessageToServer} style={{ padding: '10px 20px', cursor: 'pointer' }}>
-              Поздороваться с сервером
-          </button>
+          <form onSubmit={sendMessageToServer} style={{ display: 'flex', marginBottom: '20px' }}>
+              <input
+                  type="text"
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  placeholder="Введите текст сообщения..."
+                  style={{ flexGrow: 1, padding: '10px', fontSize: '16px' }}
+              />
+              <button type="submit" style={{ padding: '10px 20px', cursor: 'pointer', marginLeft: '5px' }}>
+                  Отправить
+              </button>
+          </form>
 
-          <div style={{ marginTop: '20px', background: '#eee', padding: '10px' }}>
-              <h3>Ответ от сервера:</h3>
-              <p>{serverMessage}</p>
+          <div style={{ background: '#eee', padding: '10px', minHeight: '200px', borderRadius: '4px' }}>
+              <h3>История чата:</h3>
+              {messages.length === 0 ? (
+                  <p style={{ color: '#666' }}>Ожидание сообщений...</p>
+              ) : (
+                  <ul style={{ listStyleType: 'none', padding: 0 }}>
+                      {messages.map((msg) => (
+                          <li key={msg.id} style={{ padding: '6px', background: '#fff', marginBottom: '5px', borderRadius: '4px', border: '1px solid #ddd' }}>
+                              {msg.text}
+                          </li>
+                      ))}
+                  </ul>
+              )}
           </div>
+
       </div>
   )
 
